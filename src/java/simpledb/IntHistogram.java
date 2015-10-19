@@ -1,8 +1,15 @@
 package simpledb;
 
+import simpledb.Predicate.Op;
+
 /** A class to represent a fixed-width histogram over a single integer-based field.
  */
 public class IntHistogram {
+	
+	private int[] histogram;
+	private int maxVal;
+	private int minVal;
+	private int numVals;
 
     /**
      * Create a new IntHistogram.
@@ -24,7 +31,19 @@ public class IntHistogram {
      * @param max The maximum integer value that will ever be passed to this class for histogramming
      */
     public IntHistogram(int buckets, int min, int max) {
-    	// some code goes here
+    	if (max < min) {
+    		throw new IllegalArgumentException("Max is: " + max + " which is less than min, which is:" + min + "!");
+    	} else if (buckets <= 0) {
+    		throw new IllegalArgumentException("Can't have a histogram with <= 0 buckets");
+    	} else {
+    		maxVal = max;
+    		minVal = min;
+    		numVals = 0;
+    		histogram = new int[buckets];
+    		for (int i = 0; i < histogram.length; ++i) {
+    			histogram[i] = 0;
+    		}
+    	}
     }
 
     /**
@@ -32,7 +51,43 @@ public class IntHistogram {
      * @param v Value to add to the histogram
      */
     public void addValue(int v) {
-    	// some code goes here
+    	if (v > maxVal || v < minVal) {
+    		throw new IllegalArgumentException("Value to add: " + v + " is outside the acceptable range of " + minVal + " <= v <= " + maxVal);
+    	} else {
+    		int bucket = getBucketIndex(v);
+    		histogram[bucket]++;
+    		numVals++;
+    	}
+    }
+    
+    /**
+     * Gets the index for the bucket that an int belongs in.
+     * 
+     * @param v     The int to get the bucket for.
+     * @return      The index of the bucket to put v in.
+     */
+    private int getBucketIndex(int v) {
+    	return (v-minVal)*histogram.length/(maxVal-minVal+1);
+    }
+    
+    /**
+     * Gets the minimum possible value in the bucket with index bucketNum.
+     * 
+     * @param bucketNum    The index of the bucket we're considering.
+     * @return    The minimum value for that bucket.
+     */
+    private int getMinInBucket(int bucketNum) {
+    	return bucketNum*(maxVal-minVal+1)/histogram.length + minVal;
+    }
+    
+    /**
+     * Gets the maximum possible value in the bucket with index bucketNum.
+     * 
+     * @param bucketNum    The index of the bucket we're considering.
+     * @return    The maximum value for that bucket. 
+     */
+    private int getMaxInBucket(int bucketNum) {
+    	return getMinInBucket(bucketNum+1) - 1;
     }
 
     /**
@@ -46,9 +101,70 @@ public class IntHistogram {
      * @return Predicted selectivity of this particular operator and value
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
+    	if (op.equals(Op.EQUALS) || op.equals(Op.LIKE)) {
+    		return estimateSelectivityEqual(v);
+    	} else if (op.equals(Op.NOT_EQUALS)) {
+    		return 1.0 - estimateSelectivityEqual(v);
+    	} else if (op.equals(Op.GREATER_THAN)) {
+    		return estimateSelectivityGreater(v);
+    	} else if (op.equals(Op.GREATER_THAN_OR_EQ)) {
+    		return estimateSelectivityEqual(v)+estimateSelectivityGreater(v);
+    	} else if (op.equals(Op.LESS_THAN)) {
+    		return estimateSelectivityLess(v);
+    	} else if (op.equals(Op.LESS_THAN_OR_EQ)) {
+    		return estimateSelectivityEqual(v)+estimateSelectivityLess(v);
+    	} else {
+    		throw new IllegalStateException("Proposed operator: " + op + "isn't valid!");
+    	}
+    }
+    
+    /**
+     * Estimates the selectivity of a particular operand on this table if the predicate is Op.EQUALS
+     * 
+     * @param v    Value
+     * @return    Predicted selectivity of this value and Op.EQUALS
+     */
+    private double estimateSelectivityEqual(int v) {
+    	if (v < minVal || v > maxVal) {
+    		return 0.0;
+    	} else {
+    		// implement method here
+    		return -1.0;
+    	}
+    }
+    
+    /**
+     * Estimates the selectivity of a particular operand on this table if the predicate is Op.GREATER_THAN
+     * 
+     * @param v    Value
+     * @return    Predicted selectivity of this value and Op.GREATER_THAN
+     */
+    private double estimateSelectivityGreater(int v) {
+    	if (v > maxVal) {
+    		return 0.0;
+    	} else if (v < minVal) {
+    		return 1.0;
+    	} else {
+    		// implement method here
+    		return -1.0;
+    	}
+    }
 
-    	// some code goes here
-        return -1.0;
+    /**
+     * Estimates the selectivity of a particular operand on this table if the predicate is Op.LESS_THAN
+     * 
+     * @param v    Value
+     * @return    Predicted selectivity of this value and Op.LESS_THAN
+     */
+    private double estimateSelectivityLess(int v) {
+    	if (v < minVal) {
+    		return 0.0;
+    	} else if (v > maxVal) {
+    		return 1.0;
+    	} else {
+    		// implement method here
+    		return -1.0;
+    	}
     }
     
     /**
@@ -71,7 +187,9 @@ public class IntHistogram {
      * @return A string describing this histogram, for debugging purposes
      */
     public String toString() {
-        // some code goes here
-        return null;
+    	String max = "maximum is: " + maxVal + ", ";
+    	String min = "minimum is: " + minVal + ", ";
+    	String vals = "histogram values are: " + histogram;
+        return max + min + vals;
     }
 }
