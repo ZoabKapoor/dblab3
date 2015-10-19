@@ -128,8 +128,10 @@ public class IntHistogram {
     	if (v < minVal || v > maxVal) {
     		return 0.0;
     	} else {
-    		// implement method here
-    		return -1.0;
+    		int bucket = getBucketIndex(v);
+    		int height = histogram[bucket];
+    		int width = getMaxInBucket(bucket)-getMinInBucket(bucket)+1;
+    		return height*1.0/(width*numVals);
     	}
     }
     
@@ -145,8 +147,15 @@ public class IntHistogram {
     	} else if (v < minVal) {
     		return 1.0;
     	} else {
-    		// implement method here
-    		return -1.0;
+    		double selectivity = 0.0;
+    		int bucket = getBucketIndex(v);
+    		int height = histogram[bucket];
+    		int width = getMaxInBucket(bucket)-getMinInBucket(bucket)+1;
+    		selectivity += (getMaxInBucket(bucket)-v)*height*1.0/(width*numVals);
+    		for (int i = bucket + 1; i < histogram.length; ++i) {
+    			selectivity += histogram[i]*1.0/numVals;
+    		}
+    		return selectivity;
     	}
     }
 
@@ -162,8 +171,15 @@ public class IntHistogram {
     	} else if (v > maxVal) {
     		return 1.0;
     	} else {
-    		// implement method here
-    		return -1.0;
+    		double selectivity = 0.0;
+    		int bucket = getBucketIndex(v);
+    		int height = histogram[bucket];
+    		int width = getMaxInBucket(bucket)-getMinInBucket(bucket)+1;
+    		selectivity += (v-getMinInBucket(bucket))*height*1.0/(width*numVals);
+    		for (int i = 0; i < bucket; ++i) {
+    			selectivity += histogram[i]*1.0/numVals;
+    		}
+    		return selectivity;
     	}
     }
     
