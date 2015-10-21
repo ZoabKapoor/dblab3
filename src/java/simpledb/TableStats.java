@@ -1,5 +1,6 @@
 package simpledb;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -65,7 +66,10 @@ public class TableStats {
      * histograms.
      */
     static final int NUM_HIST_BINS = 100;
-
+    
+    private int ioCostPerPage;
+    private Object[] histograms;
+    
     /**
      * Create a new TableStats object, that keeps track of statistics on each
      * column of a table
@@ -76,7 +80,27 @@ public class TableStats {
      *            The cost per page of IO. This doesn't differentiate between
      *            sequential-scan IO and disk seeks.
      */
+    // Implementation algorithm: Go through entire table once to populate Range[], then go
+    // through table again to populate Object[] (that contains histograms). 
     public TableStats(int tableid, int ioCostPerPage) {
+    	this.ioCostPerPage = ioCostPerPage;
+    	Transaction t = new Transaction(); 
+    	t.start(); 
+    	SeqScan s = new SeqScan(t.getId(), tableid, "t");
+    	try {
+        	while (s.hasNext()) {
+        		Tuple toAggregate = s.next();
+        		// do stuff with s 
+        	}
+    	} catch (Exception e) {
+    		throw new RuntimeException("Couldn't scan the table with id: " + tableid);
+    	}
+    	try {
+			t.commit();
+		} catch (IOException e) {
+			// tried throwing a DbException but apparently those have to be caught
+			throw new RuntimeException("Couldn't commit the transaction: " + t);
+		}
         // For this function, you'll have to get the
         // DbFile for the table in question,
         // then scan through its tuples and calculate
@@ -160,6 +184,33 @@ public class TableStats {
     public int totalTuples() {
         // some code goes here
         return 0;
+    }
+    
+    private class Range {
+    	
+    	private int max;
+    	private int min;
+    	
+    	public Range(int min, int max) {
+    		this.min = min;
+    		this.max = max;
+    	}
+    	
+    	public int getMax() {
+    		return this.max;
+    	}
+    	
+    	public int getMin() {
+    		return this.min;
+    	}
+    	
+    	public void setMax(int x) {
+    		this.max = x;
+    	}
+    	
+    	public void setMin(int x) {
+    		this.min = x;
+    	}
     }
 
 }
