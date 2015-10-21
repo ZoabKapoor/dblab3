@@ -1,0 +1,42 @@
+Life of a query in SimpleDB
+
+Step 1: simpledb.Parser.main() and simpledb.Parser.start()
+
+simpledb.Parser.main() is the entry point for the SimpleDB system. It calls simpledb.Parser.start(). The latter performs three main actions:
+
+1. It populates the SimpleDB catalog from the catalog text file provided by the user as argument (Database.getCatalog().loadSchema(argv[0]);).
+2. For each table defined in the system catalog, it computes statistics over the data in the table by calling: TableStats.computeStatistics(), which instantiates a new TableStats: TableStats s = new TableStats(tableid, IOCOSTPERPAGE);
+3. It processes the statements submitted by the user (processNextStatement(new ByteArrayInputStream(statementBytes));)
+
+Step 2: simpledb.Parser.processNextStatement()
+
+This method takes two key actions:
+
+First, it gets a physical plan for the query by invoking handleQueryStatement((ZQuery)s);
+Then it executes the query by calling query.execute();
+
+Step 3: simpledb.Parser.handleQueryStatement()
+
+This method does 4 main things:
+
+First, it creates a new query object with the transactionId passed in.
+Then, it creates a logical plan for the query by calling parseQueryLogicalPlan(tId, s);
+It then converts the logical plan into a physical plan (represented by a DbIterator) by calling lp.physicalPlan(), passing it the transactionId of the transaction, the explain flag (which determines whether to print the final join ordering for the user's benefit), and the map containing the statistics for the table. 
+Finally, it sets the logical plan and physical plan of the query to the results above and (after some metaprogramming) returns the query object. 
+
+Step 4: simpledb.LogicalPlan.physicalPlan()
+
+This function does a lot! We'll mention the key operations of the function below.
+First, it iterates over the tables included in the query, gets its associated TableStats object from baseTableStats (which is passed in), and stores the TableStats in a HashMap. 
+Then, it iterates over the LogicalFilterNodes and estimates and stores the selectivity of each filter operation using TableStats.estimateSelectivity(). 
+Then, it creates a JoinOptimizer and calls its orderJoins() method to order joins optimally and then links the joins in subplanMap to create a DbIterator node that iterates over the joins in the right order. 
+Then, it walks through the select list to determine the order in which to project output fields. It checks for aggregation and groupBy and instantiates appropriate DbIterators (Aggregate/OrderBy) if necessary (which we implemeneted in lab2). 
+Finally, it returns a project DbIterator that projects the result of the physical plan onto the fields we care about.
+
+Step 5a: simpledb.TableStats.estimateSelectivity()
+
+We'll be implementing this function in this lab! It estimates the selectivity of a particular predicate on a particular field within a particular relation, using the histogram associated with that field stored in the TableStats.
+
+Step 5b: simpleDb.JoinOptimizer.orderJoins()
+
+We'll be implementing this function in this lab as well! It takes in the statistics for each table involved in the join, and the selectivities of the filter predicates on each table in the join, and returns joins, which is a Vector<LogicalJoinNode> that stores LogicalJoinNodes in the left-deep order of their execution. It will do this by estimating the cost of every subplan of joins, starting with subplans of size 1 and working its way up to subplans of size n (where n is the size of the returned Vector<LogicalJoinNode>). It will then pick the plan of size n with the lowest cost and order joins on the schematic of that plan.
