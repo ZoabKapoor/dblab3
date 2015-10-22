@@ -28,7 +28,7 @@ Step 4: simpledb.LogicalPlan.physicalPlan()
 
 This function does a lot! We'll mention the key operations of the function below.
 First, it iterates over the tables included in the query, gets its associated TableStats object from baseTableStats (which is passed in), and stores the TableStats in a HashMap. 
-Then, it iterates over the LogicalFilterNodes and estimates and stores the selectivity of each filter operation using TableStats.estimateSelectivity(). 
+Then, it iterates over an array LogicalFilterNodes created by parseQueryLogicalPlan() and merges the selectivity of that filter into an accumulator of selectivities using TableStats.estimateSelectivity(). In particular, it initially sets the accumulator to 1 (which is what the selectivity would be if there were no filters), and with additional filter it multiplies the selectivity of that filter with the value of the accumulator
 Then, it creates a JoinOptimizer and calls its orderJoins() method to order joins optimally and then links the joins in subplanMap to create a DbIterator node that iterates over the joins in the right order. 
 Then, it walks through the select list to determine the order in which to project output fields. It checks for aggregation and groupBy and instantiates appropriate DbIterators (Aggregate/OrderBy) if necessary (which we implemeneted in lab2). 
 Finally, it returns a project DbIterator that projects the result of the physical plan onto the fields we care about.
