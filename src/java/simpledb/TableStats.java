@@ -68,6 +68,8 @@ public class TableStats {
     static final int NUM_HIST_BINS = 100;
     
     private int ioCostPerPage;
+    private int totalTuples;
+    private TupleDesc tableDesc;
     private Object[] histograms;
     
     /**
@@ -86,14 +88,63 @@ public class TableStats {
     	this.ioCostPerPage = ioCostPerPage;
     	Transaction t = new Transaction(); 
     	t.start(); 
-    	SeqScan s = new SeqScan(t.getId(), tableid, "t");
     	try {
-        	while (s.hasNext()) {
-        		Tuple toAggregate = s.next();
-        		// do stuff with s 
+        	SeqScan scan1 = new SeqScan(t.getId(), tableid, "t");
+        	tableDesc = scan1.getTupleDesc();
+        	int numHistograms = tableDesc.numFields();
+        	totalTuples = 0;
+        	Range[] ranges = new Range[numHistograms];
+    		scan1.open();
+    		while (scan1.hasNext()) {
+    			Tuple next = scan1.next();
+    			totalTuples++;
+    			for (int i = 0; i < ranges.length; ++i) {
+    				Field f = next.getField(i);
+    				if (f instanceof IntField) {
+    					int toAdd = ((IntField) f).getValue();
+    					if (!(ranges[i] instanceof Range)) {
+    						ranges[i] = new Range(toAdd, toAdd);
+    					} else {
+    						if (toAdd > ranges[i].max) {
+    							ranges[i].max = toAdd;
+    						} 
+    						if (toAdd < ranges[i].min) {
+    							ranges[i].min = toAdd;
+    						}
+    					}
+    				}
+    			}
+    		}
+        	scan1.close();
+        	histograms = new Object[numHistograms];
+        	for (int i = 0; i < histograms.length; ++i) {
+        		if (tableDesc.getFieldType(i).equals(Type.INT_TYPE)) {
+        			histograms[i] = new IntHistogram(NUM_HIST_BINS, ranges[i].min, ranges[i].max);
+        		} else if (tableDesc.getFieldType(i).equals(Type.STRING_TYPE)) {
+        			histograms[i] = new StringHistogram(NUM_HIST_BINS);
+        		}
         	}
+        	SeqScan scan2 = new SeqScan(t.getId(), tableid, "t");
+        	scan2.open();
+        	while (scan2.hasNext()) {
+        		Tuple next = scan2.next();
+        		for (int i = 0; i < histograms.length; ++i) {
+        			if (tableDesc.getFieldType(i).equals(Type.INT_TYPE)) {
+        				int intToAdd = ((IntField) next.getField(i)).getValue();
+        				IntHistogram hist = (IntHistogram) histograms[i];
+        				hist.addValue(intToAdd);
+        				histograms[i] = hist;
+        			} else if (tableDesc.getFieldType(i).equals(Type.STRING_TYPE)) {
+        				String stringToAdd = ((StringField) next.getField(i)).getValue();
+        				StringHistogram hist = (StringHistogram) histograms[i];
+        				hist.addValue(stringToAdd);
+        				histograms[i] = hist;
+        			}
+        		}
+        	}
+        	scan2.close();
     	} catch (Exception e) {
-    		throw new RuntimeException("Couldn't scan the table with id: " + tableid);
+    		throw new RuntimeException("Couldn't get the data needed from table with id: " + tableid);
     	}
     	try {
 			t.commit();
@@ -101,16 +152,6 @@ public class TableStats {
 			// tried throwing a DbException but apparently those have to be caught
 			throw new RuntimeException("Couldn't commit the transaction: " + t);
 		}
-        // For this function, you'll have to get the
-        // DbFile for the table in question,
-        // then scan through its tuples and calculate
-        // the values that you need.
-        // You should try to do this reasonably efficiently, but you don't
-        // necessarily have to (for example) do everything
-        // in a single scan of the table.
-	// See project description for hint on using a Transaction
-	
-        // some code goes here
     }
 
     /**
@@ -126,8 +167,7 @@ public class TableStats {
      * @return The estimated cost of scanning the table.
      */
     public double estimateScanCost() {
-        // some code goes here
-        return 0;
+        return (double) totalTuples*ioCostPerPage;
     }
 
     /**
@@ -140,8 +180,7 @@ public class TableStats {
      *         selectivityFactor
      */
     public int estimateTableCardinality(double selectivityFactor) {
-        // some code goes here
-        return 0;
+        return (int) (totalTuples*selectivityFactor);
     }
 
     /**
@@ -174,16 +213,22 @@ public class TableStats {
      *         predicate
      */
     public double estimateSelectivity(int field, Predicate.Op op, Field constant) {
-        // some code goes here
-        return 1.0;
+        if (tableDesc.getFieldType(field).equals(Type.INT_TYPE)) {
+        	IntHistogram hist = (IntHistogram) histograms[field];
+        	return hist.estimateSelectivity(op, ((IntField) constant).getValue());
+        } else if (tableDesc.getFieldType(field).equals(Type.STRING_TYPE)) {
+        	StringHistogram hist = (StringHistogram) histograms[field];
+        	return hist.estimateSelectivity(op, ((StringField) constant).getValue());
+        } else {
+        	throw new Error("Field num: " + field + " has a type that is neither int nor field!");
+        }
     }
 
     /**
      * return the total number of tuples in this table
      * */
     public int totalTuples() {
-        // some code goes here
-        return 0;
+        return totalTuples;
     }
     
     private class Range {
@@ -194,22 +239,6 @@ public class TableStats {
     	public Range(int min, int max) {
     		this.min = min;
     		this.max = max;
-    	}
-    	
-    	public int getMax() {
-    		return this.max;
-    	}
-    	
-    	public int getMin() {
-    		return this.min;
-    	}
-    	
-    	public void setMax(int x) {
-    		this.max = x;
-    	}
-    	
-    	public void setMin(int x) {
-    		this.min = x;
     	}
     }
 

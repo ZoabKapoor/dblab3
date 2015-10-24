@@ -1,5 +1,7 @@
 package simpledb;
 
+import java.util.Arrays;
+
 import simpledb.Predicate.Op;
 
 /** A class to represent a fixed-width histogram over a single integer-based field.
@@ -9,6 +11,7 @@ public class IntHistogram {
 	private int[] histogram;
 	private int maxVal;
 	private int minVal;
+	private double bucketWidth;
 	private int numVals;
 
     /**
@@ -39,6 +42,7 @@ public class IntHistogram {
     		maxVal = max;
     		minVal = min;
     		numVals = 0;
+    		bucketWidth = (max-min+1)*1.0/buckets;
     		histogram = new int[buckets];
     		for (int i = 0; i < histogram.length; ++i) {
     			histogram[i] = 0;
@@ -77,7 +81,7 @@ public class IntHistogram {
      * @return    The minimum value for that bucket.
      */
     private int getMinInBucket(int bucketNum) {
-    	return bucketNum*(maxVal-minVal+1)/histogram.length + minVal;
+    	return (int) (bucketNum*bucketWidth) + minVal;
     }
     
     /**
@@ -87,7 +91,7 @@ public class IntHistogram {
      * @return    The maximum value for that bucket. 
      */
     private int getMaxInBucket(int bucketNum) {
-    	return getMinInBucket(bucketNum+1) - 1;
+    	return (int) ((bucketNum+1)*bucketWidth) + minVal;
     }
 
     /**
@@ -205,7 +209,7 @@ public class IntHistogram {
     public String toString() {
     	String max = "maximum is: " + maxVal + ", ";
     	String min = "minimum is: " + minVal + ", ";
-    	String vals = "histogram values are: " + histogram;
+    	String vals = "histogram values are: " + Arrays.toString(histogram);
         return max + min + vals;
     }
 }
