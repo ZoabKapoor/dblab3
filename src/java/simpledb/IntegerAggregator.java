@@ -72,18 +72,22 @@ public class IntegerAggregator implements Aggregator {
     			}
     		} else {
     			int currentAgg = aggregateNumNoGrouping;
-    			if (operator.equals(Op.SUM) || operator.equals(Op.AVG)) {
+    			switch (operator) {
+    			case AVG:
+    				aggregateDenomNoGrouping++;
+    			case SUM:
     				aggregateNumNoGrouping += toAdd;
-    				if (operator.equals(Op.AVG)) {
-    					aggregateDenomNoGrouping++;
-    				}
-    			} else if (operator.equals(Op.COUNT)) {
+    				break;
+    			case COUNT:
     				aggregateNumNoGrouping++;
-    			} else if (operator.equals(Op.MAX)) {
+    				break;
+    			case MAX:
     				aggregateNumNoGrouping = Math.max(currentAgg, toAdd);
-    			} else if (operator.equals(Op.MIN)) {
+    				break;
+    			case MIN:
     				aggregateNumNoGrouping = Math.min(currentAgg, toAdd);
-    			} else {
+    				break;
+    			default:
     				throw new IllegalStateException("Operator must be one of SUM, COUNT, AVG, MAX, MIN!");
     			}
     		}
@@ -92,19 +96,23 @@ public class IntegerAggregator implements Aggregator {
     		int newAgg;
     		if (aggregateNumsWithGrouping.containsKey(group)) {
     			int currentAgg = aggregateNumsWithGrouping.get(group);
-    			if (operator.equals(Op.SUM) || operator.equals(Op.AVG)) {
+    			switch (operator) {
+    			case AVG:
+    				int currentDenom = aggregateDenomsWithGrouping.get(group);
+					aggregateDenomsWithGrouping.put(group, currentDenom+1);
+    			case SUM:
     				newAgg = currentAgg + toAdd;
-    				if (operator.equals(Op.AVG)) {
-    					int currentDenom = aggregateDenomsWithGrouping.get(group);
-    					aggregateDenomsWithGrouping.put(group, currentDenom+1);
-    				}
-    			} else if (operator.equals(Op.COUNT)) {
+    				break;
+    			case COUNT:
     				newAgg = currentAgg + 1;
-    			} else if (operator.equals(Op.MAX)) {
+    				break;
+    			case MAX:
     				newAgg = Math.max(toAdd, currentAgg);
-    			} else if (operator.equals(Op.MIN)) {
+    				break;
+    			case MIN:
     				newAgg = Math.min(toAdd, currentAgg);
-    			} else {
+    				break;
+    			default:
     				throw new IllegalStateException("Operator must be one of SUM, COUNT, AVG, MAX, MIN!");
     			}
     			aggregateNumsWithGrouping.put(group, newAgg);

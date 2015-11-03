@@ -155,26 +155,26 @@ public class JoinOptimizer {
             Map<String, Integer> tableAliasToId) {
 
     	switch (joinOp) {
-    		case EQUALS:
-    		case NOT_EQUALS:
-    		case LIKE:
-    			int result;
-    			if (t1pkey && t2pkey) {
-    				result = Math.min(card1, card2);
-    			} else if (t1pkey) {
-    				result = card2;
-    			} else if (t2pkey) {
-    				result = card1;
-    			} else {
-    				result = Math.max(card1, card2);
-    			}
-    			if (joinOp.equals(Predicate.Op.NOT_EQUALS)) {
-    				return (card1*card2 - result);
-    			} else {
-    				return result;
-    			}
-    		default:
-    			return (card1*card2*3)/10;
+    	case EQUALS:
+    	case NOT_EQUALS:
+    	case LIKE:
+    		int result;
+    		if (t1pkey && t2pkey) {
+    			result = Math.min(card1, card2);
+    		} else if (t1pkey) {
+    			result = card2;
+    		} else if (t2pkey) {
+    			result = card1;
+    		} else {
+    			result = Math.max(card1, card2);
+    		}
+    		if (joinOp.equals(Predicate.Op.NOT_EQUALS)) {
+    			return (card1*card2 - result);
+    		} else {
+    			return result;
+    		}
+    	default:
+    		return (card1*card2*3)/10;
     	}
     }
 
