@@ -248,7 +248,11 @@ public class JoinOptimizer {
         		bestPlans.addPlan(subset, bestPlan.cost, bestPlan.card, bestPlan.plan);
     		}
     	}
-        return bestPlans.getOrder(new HashSet<LogicalJoinNode>(joins));
+    	Vector<LogicalJoinNode> result = bestPlans.getOrder(new HashSet<LogicalJoinNode>(joins));
+    	if (explain) {
+    		printJoins(result, bestPlans, stats, filterSelectivities);
+    	}
+        return result;
     }
 
     // ===================== Private Methods =================================
