@@ -130,14 +130,12 @@ public class TableStats {
         		Tuple next = scan2.next();
         		for (int i = 0; i < histograms.length; ++i) {
         			if (tableDesc.getFieldType(i).equals(Type.INT_TYPE)) {
-        				IntField field = ((IntField) next.getField(i));
-        				int intToAdd = (field == null) ? null : field.getValue();
+        				int intToAdd = ((IntField) next.getField(i)).getValue();
         				IntHistogram hist = (IntHistogram) histograms[i];
         				hist.addValue(intToAdd);
         				histograms[i] = hist;
         			} else if (tableDesc.getFieldType(i).equals(Type.STRING_TYPE)) {
-        				StringField field = ((StringField) next.getField(i));
-        				String stringToAdd = (field == null) ? null : field.getValue();
+        				String stringToAdd = ((StringField) next.getField(i)).getValue();
         				StringHistogram hist = (StringHistogram) histograms[i];
         				hist.addValue(stringToAdd);
         				histograms[i] = hist;

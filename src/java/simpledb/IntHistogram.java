@@ -59,9 +59,6 @@ public class IntHistogram {
     		throw new IllegalArgumentException("Value to add: " + v + " is outside the acceptable range of " + minVal + " <= v <= " + maxVal);
     	} else {
     		int bucket = getBucketIndex(v);
-    		if (!(bucket >= 0)) {
-    			throw new RuntimeException("Value: " + v + " min: " + minVal + " max: " + maxVal + " length " + histogram.length + " bucket: " + bucket);
-    		}
     		histogram[bucket]++;
     		numVals++;
     	}
@@ -74,9 +71,7 @@ public class IntHistogram {
      * @return      The index of the bucket to put v in.
      */
     private int getBucketIndex(int v) {
-    	Double intermediate = new Double((v-minVal)*1.0/(maxVal-minVal+1));
-    	int result = (int) (intermediate*histogram.length);
-    	return result;
+    	return (v-minVal)*histogram.length/(maxVal-minVal+1);
     }
     
     /**
