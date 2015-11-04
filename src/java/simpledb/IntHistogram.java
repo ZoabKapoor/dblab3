@@ -71,7 +71,7 @@ public class IntHistogram {
      * @return      The index of the bucket to put v in.
      */
     private int getBucketIndex(int v) {
-    	return (v-minVal)*histogram.length/(maxVal-minVal+1);
+    	return (int) ((v-minVal)/bucketWidth);
     }
     
     /**
@@ -81,7 +81,7 @@ public class IntHistogram {
      * @return    The minimum value for that bucket.
      */
     private int getMinInBucket(int bucketNum) {
-    	return (int) (bucketNum*bucketWidth) + minVal;
+    	return (int) (Math.ceil(bucketNum*bucketWidth)) + minVal;
     }
     
     /**
@@ -91,7 +91,8 @@ public class IntHistogram {
      * @return    The maximum value for that bucket. 
      */
     private int getMaxInBucket(int bucketNum) {
-    	return (int) ((bucketNum+1)*bucketWidth) + minVal;
+    	return (getMinInBucket(bucketNum) == getMinInBucket(bucketNum+1) ? 
+    			getMinInBucket(bucketNum) : getMinInBucket(bucketNum+1)-1);
     }
 
     /**
