@@ -106,19 +106,21 @@ public class IntHistogram {
      * @return Predicted selectivity of this particular operator and value
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
-    	if (op.equals(Op.EQUALS) || op.equals(Op.LIKE)) {
+    	switch (op) {
+    	case EQUALS:
+    	case LIKE:
     		return estimateSelectivityEqual(v);
-    	} else if (op.equals(Op.NOT_EQUALS)) {
+    	case NOT_EQUALS:
     		return 1.0 - estimateSelectivityEqual(v);
-    	} else if (op.equals(Op.GREATER_THAN)) {
+    	case GREATER_THAN:
     		return estimateSelectivityGreater(v);
-    	} else if (op.equals(Op.GREATER_THAN_OR_EQ)) {
-    		return estimateSelectivityEqual(v)+estimateSelectivityGreater(v);
-    	} else if (op.equals(Op.LESS_THAN)) {
+    	case GREATER_THAN_OR_EQ:
+    		return estimateSelectivityEqual(v) + estimateSelectivityGreater(v);
+    	case LESS_THAN:
     		return estimateSelectivityLess(v);
-    	} else if (op.equals(Op.LESS_THAN_OR_EQ)) {
-    		return estimateSelectivityEqual(v)+estimateSelectivityLess(v);
-    	} else {
+    	case LESS_THAN_OR_EQ:
+    		return estimateSelectivityLess(v) + estimateSelectivityEqual(v);
+    	default:
     		throw new IllegalStateException("Proposed operator: " + op + "isn't valid!");
     	}
     }
