@@ -1,4 +1,4 @@
-Life of a query in SimpleDB
+Exercise 1: Life of a query in SimpleDB
 
 Step 1: simpledb.Parser.main() and simpledb.Parser.start()
 
@@ -40,3 +40,19 @@ We'll be implementing this function in this lab! It estimates the selectivity of
 Step 5b: simpleDb.JoinOptimizer.orderJoins()
 
 We'll be implementing this function in this lab as well! It takes in the statistics for each table involved in the join, and the selectivities of the filter predicates on each table in the join, and returns joins, which is a Vector<LogicalJoinNode> that stores LogicalJoinNodes in the left-deep order of their execution. It will do this by estimating the cost of every subplan of joins, starting with subplans of size 1 and working its way up to subplans of size n (where n is the size of the returned Vector<LogicalJoinNode>). It will then pick the plan of size n with the lowest cost and order joins on the schematic of that plan.
+
+
+Writeup:
+
+Code completeness and time spent:
+
+All exercises are complete, and the implementation passes all tests! I probably spent about 18 hours on this lab, which isn't so bad compared to the past two. 
+
+Issues I ran into:
+
+1. One thing that was particularly difficult was writing the IntHistogram correctly. Coding the histogram so that it could handle ranges that were smaller or greater than numBuckets was tough, as was dealing with non-integer bucketWidths (after speaking to Prof Beth, I recognize that there is a way to force your bucketWidths to all be integers, but I chose to divide up the range given into numBuckets equally sized subpieces, and mapped integer values into the bucket whose range they fit in). In fact, after initially "successfully" implementing IntHistogram, I had to come back to it twice and modify the code because the TableStats or JoinOptimizer tests revealed an implementation flaw. I'm not particularly happy that my final implementation basically has an if case for whether we're dealing with a situation where numBuckets >= range or numBuckets < range, but it works and seems logically sound, and reworking it doesn't seem like it'll be worth it. 
+2. The fact that there was no general Histogram interface that we could use in TableStats meant that I had to make my Histogram array an array[Object] and use casting to get the behaviour I wanted. A Histogram interface  would've been a nice thing to have, but then there would be the problem of making addValue be able to take an int or a string. I suppose you could've had addValue(Object), but then you'd run back into casting and it would still be inelegant.
+
+API changes:
+
+Unlike in previous labs, I didn't change the public API of any of the classes I was dealing with at all (I think). I did add a bunch of private helper methods into IntHistogram, but since these are private they don't affect the APIs provided. I also created a private class called Range in TableStats to help with the TableStats constructor. 
